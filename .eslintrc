@@ -1,0 +1,93 @@
+{
+  "extends": [
+    "google"
+  ],
+  "env": {
+    "es6": true,
+    "node": true,
+    "phantomjs": true,
+    "mocha": true,
+    "jquery": true
+  },
+  "plugins": [
+  ],
+  "rules": {
+    "indent": [
+      "error",
+      4,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "curly": [
+      "error",
+      "all"
+    ],
+    "no-implicit-coercion": [
+      "error",
+      {
+        "boolean": false,
+        "number": false,
+        "string": false
+      }
+    ],
+    "space-before-function-paren": [
+      "error",
+      "never"
+    ],
+    "valid-jsdoc": [
+      "error",
+      {
+        "requireReturn": false
+      }
+    ],
+    "require-jsdoc": [
+      "warn"
+    ],
+    "max-len": [
+      "error",
+      120,
+      4,
+      {
+        "ignoreComments": true,
+        "ignoreUrls": true,
+        "ignoreTrailingComments": true
+      }
+    ],
+    "guard-for-in": [
+      "error"
+    ],
+    "no-trailing-spaces": [
+      "warn"
+    ],
+    "quotes": [
+      "error",
+      "single",
+      {
+        "allowTemplateLiterals": true
+      }
+    ],
+    "new-cap": [
+      "error"
+    ],
+    "key-spacing": [
+      "error",
+      {
+        "mode": "minimum"
+      }
+    ],
+    "generator-star-spacing": [
+      "error",
+      "before"
+    ],
+    "camelcase": [
+      "error",
+      {
+        "properties": "always"
+      }
+    ],
+    "no-extra-boolean-cast": [
+      "off"
+    ]
+  }
+}

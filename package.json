@@ -1,0 +1,36 @@
+{
+  "name": "pragma-storage",
+  "version": "1.0.0",
+  "description": "Package for use multiple data storages in one interface API",
+  "main": "index.js",
+  "scripts": {
+    "start": "index.js",
+    "docs": "jsdoc2md --module-index-format grouped --global-index-format grouped --member-index-format grouped --param-list-format table --property-list-format table --src index.js > CODEDOC.md"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PragmaWolf/pragma-storage.git"
+  },
+  "keywords": [
+    "storage",
+    "redis",
+    "postgresql",
+    "mysql",
+    "mariadb",
+    "cache",
+    "db",
+    "pragma"
+  ],
+  "author": "Dmitry Furman <pragmawolf@gmail.com>",
+  "license": "WTFPL",
+  "dependencies": {
+    "mysql": "^2.11.1",
+    "pg-promise": "^4.8.1",
+    "redis": "^2.6.2",
+    "winston": "^2.2.0",
+    "z-schema": "^3.17.0"
+  },
+  "devDependencies": {
+    "jsdoc-to-markdown": "^1.3.6"
+  }
+}

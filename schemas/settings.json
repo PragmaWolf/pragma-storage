@@ -1,0 +1,173 @@
+{
+    "id": "config",
+    "description": "JSON-schema for Storage.IO settings",
+    "type": "object",
+    "oneOf": [
+        {
+            "$ref": "#/definitions/oneDB"
+        },
+        {
+            "$ref": "#/definitions/multiDB"
+        }
+    ],
+    "definitions": {
+        "oneDB": {
+            "type": "object",
+            "description": "One connection block",
+            "additionalProperties": false,
+            "required": [
+                "driver",
+                "connection",
+                "redis"
+            ],
+            "properties": {
+                "driver": {
+                    "description": "Driver name for DB",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "postgres",
+                                "mysql"
+                            ]
+                        },
+                        {
+                            "type": "boolean",
+                            "enum": [
+                                false
+                            ]
+                        }
+                    ]
+                },
+                "connection": {
+                    "description": "Parameters for DB connection",
+                    "$ref": "#/definitions/connection"
+                },
+                "redis": {
+                    "description": "Parameters for Redis connection",
+                    "$ref": "#/definitions/redis"
+                }
+            }
+        },
+        "multiDB": {
+            "type": "object",
+            "description": "Multiconnections block",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^[a-zA-Z0-9]+$": {
+                    "description": "See one connection block",
+                    "$ref": "#/definitions/oneDB"
+                }
+            }
+        },
+        "connection": {
+            "description": "Parameters for DB connection",
+            "anyOf": [
+                {
+                    "type": "boolean",
+                    "enum": [
+                        false
+                    ]
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "host",
+                        "port",
+                        "database",
+                        "user",
+                        "password",
+                        "poolSize"
+                    ],
+                    "properties": {
+                        "host": {
+                            "type": "string",
+                            "description": "DB host",
+                            "anyOf": [
+                                {
+                                    "format": "hostname"
+                                },
+                                {
+                                    "format": "ipv4"
+                                }
+                            ]
+                        },
+                        "port": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "DB port"
+                        },
+                        "database": {
+                            "type": "string",
+                            "description": "DB name"
+                        },
+                        "user": {
+                            "type": "string",
+                            "description": "DB user"
+                        },
+                        "password": {
+                            "type": "string",
+                            "description": "DB password"
+                        },
+                        "poolSize" : {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Pool connections limit"
+                        }
+                    }
+                }
+            ]
+        },
+        "redis": {
+            "description": "Parameters for Redis connection",
+            "anyOf": [
+                {
+                    "type": "boolean",
+                    "enum": [
+                        false
+                    ]
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "host",
+                        "port"
+                    ],
+                    "properties": {
+                        "host": {
+                            "type": "string",
+                            "description": "Redis host",
+                            "anyOf": [
+                                {
+                                    "format": "hostname"
+                                },
+                                {
+                                    "format": "ipv4"
+                                }
+                            ]
+                        },
+                        "port": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Redis port"
+                        },
+                        "db": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 15,
+                            "description": "Redis DB number"
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "Prefix for all Redis keys"
+                        },
+                        "password": {
+                            "type": "string",
+                            "description": "Redis pasword"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

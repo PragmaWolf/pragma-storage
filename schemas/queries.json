@@ -1,0 +1,71 @@
+{
+    "id": "query",
+    "type": "object",
+    "description": "JSON-schema for DB queries",
+    "patternProperties": {
+        "^[a-zA-Z0-9]+$": {
+            "type": "object",
+            "description": "One query block",
+            "additionalProperties": false,
+            "required": [
+                "connection",
+                "sql",
+                "caching",
+                "expire",
+                "addition"
+            ],
+            "properties": {
+                "connection": {
+                    "description": "DB connection name",
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        {
+                            "type": "boolean",
+                            "enum": [
+                                false
+                            ]
+                        }
+                    ]
+                },
+                "sql": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Query to DB"
+                },
+                "caching": {
+                    "type": "boolean",
+                    "description": "Cache query result"
+                },
+                "expire": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Cache lifetime (milliseconds)"
+                },
+                "addition": {
+                    "description": "Additional query elements",
+                    "anyOf": [
+                        {
+                            "type": "boolean",
+                            "enum": [
+                                false
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "patternProperties": {
+                                "^[a-zA-Z0-9]+$": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "description": "One additional query element"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
