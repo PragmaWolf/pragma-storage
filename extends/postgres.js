@@ -111,22 +111,14 @@ class PostgreSQL {
      * @returns {Promise} resolve с массивом результататов транзакции reject с сообщением об ошибке.
      */
     transactionRequest(sqlList, paramList = []) {
-        return new Promise((resolve, reject) => {
-            this.connection.tx(function() {
+        return this.connection.tx(function() {
                 let requestsList = [];
                 for (let index in sqlList) {
                     requestsList.push(this.any(sqlList[index], paramList[index] || {}));
                 }
-
                 return this.batch(requestsList);
-            })
-                .then(result => {
-                    resolve(result);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
+            });
+        }
     }
 }
 
