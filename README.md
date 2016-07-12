@@ -63,6 +63,7 @@ To connect to multiple databases and/or caches:
             "db":     2,
             "prefix": "postgres"
         }
+    }
 }
 ```
 
@@ -109,6 +110,7 @@ To connect to a one database and/or cache:
         "port": 6379,
         "db": 0,
         "prefix": "cache:"
+    }
 }
 ```
 
@@ -148,6 +150,7 @@ __redis.prefix__ - `string` - Prefix for all keys in Redis.
         "addition": {
             "additionParam": "AND otherField = $(value)"
         }
+    }
 }
 ```
 
@@ -181,38 +184,39 @@ Changing the settings have already initialized module. The new settings will rep
 
 ```javascript
 let newOptions = {
-                     keyValue:     {
-                         driver:     'mysql',
-                         connection: {
-                             host:     '127.0.0.1',
-                             port:     3306,
-                             database: 'dbName',
-                             user:     'userName',
-                             password: 'secret'
-                         },
-                         redis:      { //
-                             host:   '127.0.0.1',
-                             port:   6379,
-                             db:     1,
-                             prefix: 'mysql:'
-                         }
-                     },
-                     production:  {
-                         driver:     'postgres',
-                         connection: {
-                             host:     '127.0.0.1',
-                             port:     5432,
-                             database: 'dbName',
-                             user:     'userName',
-                             password: 'secret'
-                         },
-                         redis:      {
-                             host:   '127.0.0.1',
-                             port:   6379,
-                             db:     2,
-                             prefix: 'postgres'
-                         }
-                 };
+     keyValue:     {
+         driver:     'mysql',
+         connection: {
+             host:     '127.0.0.1',
+             port:     3306,
+             database: 'dbName',
+             user:     'userName',
+             password: 'secret'
+         },
+         redis:      { //
+             host:   '127.0.0.1',
+             port:   6379,
+             db:     1,
+             prefix: 'mysql:'
+         }
+     },
+     production:  {
+         driver:     'postgres',
+         connection: {
+             host:     '127.0.0.1',
+             port:     5432,
+             database: 'dbName',
+             user:     'userName',
+             password: 'secret'
+         },
+         redis:      {
+             host:   '127.0.0.1',
+             port:   6379,
+             db:     2,
+             prefix: 'postgres'
+         }
+     }
+ };
 
 pragmaStorage.addSettings(newOptions);
 ```
@@ -227,22 +231,23 @@ The change request list already initialized module. The new list replaces the ol
 
 ```javascript
 let newQueries = {
-                     getSomeData:         {
-                         connection: 'keyValue',
-                         sql:        `SELECT * FROM table_mysql LIMIT 5;`,
-                         caching:    true,
-                         expire:     360000,
-                         addition:   false
-                     },
-                     queryName:    {
-                         connection: false,
-                         sql:        `SELECT * FROM table_postgres WHERE id = $(insertId) $>additionParam< LIMIT 5;`,
-                         caching:    false,
-                         expire:     0,
-                         addition:   {
-                             additionParam: `AND otherField = $(value)`
-                         }
-                 };
+     getSomeData:         {
+         connection: 'keyValue',
+         sql:        `SELECT * FROM table_mysql LIMIT 5;`,
+         caching:    true,
+         expire:     360000,
+         addition:   false
+     },
+     queryName:    {
+         connection: false,
+         sql:        `SELECT * FROM table_postgres WHERE id = $(insertId) $>additionParam< LIMIT 5;`,
+         caching:    false,
+         expire:     0,
+         addition:   {
+             additionParam: `AND otherField = $(value)`
+         }
+     }
+};
 
 pragmaStorage.addQueries(newQueries);
 ```
