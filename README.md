@@ -1,6 +1,7 @@
 # Module works with external storage (database and cache).
 
 ## Used and tested on
+
 - NodeJS 6+ [Documentation](https://nodejs.org/dist/latest-v5.x/docs/api/)
 - Redis 3+ [Documentation](http://redis.io/documentation)
 - PostgreSQL 9.5+ [Documentation](http://www.postgresql.org/docs/9.5/interactive/index.html)
