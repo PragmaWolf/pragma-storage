@@ -100,7 +100,9 @@ class PostgreSQL {
      */
     *_generateRequestsList(sqlList, paramList = []) {
         for (let index in sqlList) {
-            yield this.connection.any(sqlList[index], paramList[index] || {});
+            if (sqlList.hasOwnProperty(index)) {
+                yield this.connection.any(sqlList[index], paramList[index] || {});
+            }
         }
     }
 
@@ -111,14 +113,17 @@ class PostgreSQL {
      * @returns {Promise} resolve с массивом результататов транзакции reject с сообщением об ошибке.
      */
     transactionRequest(sqlList, paramList = []) {
-        return this.connection.tx(function() {
-                let requestsList = [];
-                for (let index in sqlList) {
+        return this.connection.tx(() => {
+            let requestsList = [];
+
+            for (let index in sqlList) {
+                if (sqlList.hasOwnProperty(index)) {
                     requestsList.push(this.any(sqlList[index], paramList[index] || {}));
                 }
-                return this.batch(requestsList);
-            });
-        }
+            }
+
+            return this.batch(requestsList);
+        });
     }
 }
 

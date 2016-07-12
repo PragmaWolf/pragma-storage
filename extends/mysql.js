@@ -45,7 +45,7 @@ class MySQL {
         try {
             // если коннект еще не установлен
             if (!this.connection) {
-                this.options.connectionLimit = this.options.poolSize; 
+                this.options.connectionLimit = this.options.poolSize;
 
                 this.connection = mysql.createPool(this.options);
 
@@ -125,7 +125,9 @@ class MySQL {
      */
     *_generateRequestsList(sqlList, paramList = []) {
         for (let index in sqlList) {
-            yield this.setData(sqlList[index], paramList[index] || {});
+            if (sqlList.hasOwnProperty(index)) {
+                yield this.setData(sqlList[index], paramList[index] || {});
+            }
         }
     }
 

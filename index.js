@@ -1,142 +1,67 @@
 'use strict';
 /**
- * Модуль работы с внешними хранилищами (БД и кэш).
- * @module storage
+ * Module works with external storage (database and cache).
+ * @module pragmaStorage
  * @license WTFPL
  */
 
-/** Модуль работы с файловой системой */
 const fs = require('fs');
-/** Модуль работы с файловыми путями */
 const path = require('path');
-/**
- * Модуль проверки JSON данных по JSON схемам.
- * @type {ZSchema}
- */
 const ZSchema = require('z-schema');
-/** Модуль обработки и возврата ошибок в блоках catch у Promise. */
+
+/** Error handling module for catch on Promise. */
 const catchError = require('./modules/catcherr');
 
-/**
- * Класс работы с внешними хранилищами (БД и кэш).
- */
-class Storage {
-    /** Конструктор класса */
+/** Class works with external storage (database and cache). */
+class PragmaStorage {
     constructor() {
-        /**
-         * Название текущего класса для дебага и лога ошибок
-         * @type {string}
-         * @private
-         */
+        /** The name of the current class for debug and error log */
         this._CLASS = this.constructor.name.toString();
 
-        /** JSON-схема проверки настроек
-         * @type {string}
-         * @private
-         */
+        /** JSON-schema for check settings */
         this.settingsSchema = require('./schemas/settings.json');
 
-        /** JSON-схема проверки списка запросов
-         * @type {string}
-         * @private
-         */
+        /** JSON-schema for check queries list */
         this.queriesSchema = require('./schemas/queries.json');
 
-        /**
-         * Путь до папки с модулями-расширениями для работы с отдельными хранилищами.
-         * @type {string}
-         * @private
-         */
+        /** The path to the folder with the modules, extensions to work with individual stores. */
         this.extendsFolder = `${__dirname}/extends/`;
 
-        /** Хранилище настроек
-         * @type {object}
-         * @private
-         */
+        /** Settings object */
         this.settings = {};
 
-        /** Хранилище запросов
-         * @type {object}
-         * @private
-         */
+        /** Queries object */
         this.queries = {};
 
-        /** Хранилище соединений
-         * @type {object}
-         * @private
-         */
+        /** Connections to storages */
         this.connections = {};
 
-        /** Название соединения по-умолчанию
-         * @type {string}
-         * @private
-         */
+        /** Default connection name */
         this.connectionName = 'main';
 
-        /** Состояние хранилища
-         * @type {string}
-         */
+        /** PragmaStorage state */
         this.state = 'initial';
 
-        /** Готово ли хранилище к работе.
-         * @type {boolean}
-         */
+        /** PragmaStorage ready for work */
         this.ready = false;
 
-        /**
-         * Модуль проверки JSON данных по JSON схемам.
-         * @type {ZSchema}
-         * @private
-         */
+        /** JSON-schemas validator object */
         this.validator = new ZSchema();
 
-        Object.defineProperties(this, {
-            _CLASS:         {
-                configurable: false,
-                enumerable:   false,
-                writable:     false
-            },
-            settingsSchema: {
-                configurable: false,
-                enumerable:   false,
-                writable:     false
-            },
-            queriesSchema:  {
-                configurable: false,
-                enumerable:   false,
-                writable:     false
-            },
-            extendsFolder:  {
-                configurable: false,
-                enumerable:   false,
-                writable:     false
-            },
-            settings:       {
-                enumerable: false
-            },
-            queries:        {
-                enumerable: false
-            },
-            connections:    {
-                configurable: false,
-                enumerable:   false
-            },
-            connectionName: {
-                configurable: false,
-                enumerable:   false
-            },
-            validator:      {
-                configurable: false,
-                enumerable:   false,
-                writable:     false
-            }
-        });
+        /** Parameter contains Redis module */
+        this.redis = null;
+        /** Parameter contains MySQL module */
+        this.mysql = null;
+        /** Parameter contains PostgreSQL module */
+        this.postgres = null;
+        /** Parameter contains Memcache module */
+        this.memcache = null;
     }
 
     /**
-     * Проверка списка запросов на соответствие JSON-схеме.
-     * @param {object} queries Объект со списком запросов.
-     * @returns {Promise} Промис в состоянии resolve с массивом json или reject с сообщением об ошибке.
+     * Check the list of requests for compliance with JSON-scheme.
+     * @param {Object} queries Object list requests.
+     * @returns {Promise.<resolve|reject>} JSON with requests list or error message.
      * @private
      */
     _validateQueries(queries) {
@@ -148,10 +73,10 @@ class Storage {
     }
 
     /**
-     * Проверка переданного JSON-массива на соответствие указанной JSON-схемы.
-     * @param {object=} [json={}] JSON-массив для проверки.
-     * @param {object=} [schema={}] JSON-схема для проверки переданного JSON-массива.
-     * @returns {Promise} Промис в состоянии resolve с массивом json или reject с сообщением об ошибке.
+     * Checking transferred JSON-array to meet the specified JSON-scheme.
+     * @param {Object=} [json={}] JSON for checking.
+     * @param {Object=} [schema={}] JSON-scheme to check the transmitted JSON.
+     * @returns {Promise.<resolve|reject>} Validated JSON or error message.
      * @private
      */
     _jsonSchemaValidator(json = {}, schema = {}) {
@@ -169,8 +94,8 @@ class Storage {
 
     /**
      * Проверка наличия запроса по имени.
-     * @param {string} name Название запроса.
-     * @returns {boolean} TRUE если есть запрос, FALSE, если нет.
+     * @param {String} name Название запроса.
+     * @returns {Boolean} TRUE если есть запрос, FALSE, если нет.
      * @private
      */
     _existQuery(name) {
@@ -179,7 +104,7 @@ class Storage {
 
     /**
      * Проверка настроек на соответствие JSON-схеме.
-     * @param {object} settings Объект с настройками.
+     * @param {Object} settings Объект с настройками.
      * @returns {Promise} Промис в состоянии resolve с массивом json или reject с сообщением об ошибке.
      * @private
      */
@@ -241,15 +166,15 @@ class Storage {
 
     /**
      * Применение настроек для одного подключения.
-     * @param {object} settings Настройки подключения.
-     * @param {string=} [connectionName='main'] Название подключения.
+     * @param {Object} settings Настройки подключения.
+     * @param {String=} [connectionName='main'] Название подключения.
      * @private
      */
     _applyOneConnection(settings, connectionName = 'main') {
         connectionName = connectionName || this.connectionName;
 
         this.connections[connectionName] = {
-            db:    false,
+            db: false,
             cache: false
         };
 
@@ -259,18 +184,20 @@ class Storage {
 
         // подключение кэша
         if (settings.redis) {
-            this.connections[connectionName].cache = new this.redis(settings.redis);
+            this.connections[connectionName].cache = new this.redis(settings.redis); // eslint-disable-line new-cap
         }
     }
 
     /**
      * Применение настроек для нескольких подключений.
-     * @param {object} settings Объект с именованными настройками подключения.
+     * @param {Object} settings Объект с именованными настройками подключения.
      * @private
      */
     _applyMultiConnection(settings) {
         for (let name in settings) {
-            this._applyOneConnection(settings[name], name);
+            if (settings.hasOwnProperty(name)) {
+                this._applyOneConnection(settings[name], name);
+            }
         }
     }
 
@@ -288,7 +215,7 @@ class Storage {
 
     /**
      * Проверка и применение полученных настроек.
-     * @param {object} settings Объект с настройками.
+     * @param {Object} settings Объект с настройками.
      * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
      * @private
      */
@@ -308,7 +235,7 @@ class Storage {
 
     /**
      * Проверка и применение полученного списка запросов.
-     * @param {object} queries Объект со списком запросов.
+     * @param {Object} queries Объект со списком запросов.
      * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
      * @private
      */
@@ -322,13 +249,13 @@ class Storage {
 
     /**
      * Инициализатор класса.
-     * @param {object=} [settings={}] Объект с настройками подключений.
-     * @param {object=} [queries={}] Объект с запросами в БД.
+     * @param {Object=} [settings={}] Объект с настройками подключений.
+     * @param {Object=} [queries={}] Объект с запросами в БД.
      * @example
      * storage.init({}, {})
-     *     .then(result => console.log('Storage ready', storage.ready))
+     *     .then(result => console.log(`PragmaStorage ready ${storage.ready}`))
      *     .catch(error => console.error(error));
-     * @returns {Promise} Промис в состоянии resolve с объектом Storage или reject с ошибкой.
+     * @returns {Promise} Промис в состоянии resolve с объектом PragmaStorage или reject с ошибкой.
      */
     init(settings = {}, queries = {}) {
         this.ready = false;
@@ -350,7 +277,7 @@ class Storage {
 
     /**
      * Получение объекта с неинициализированным модулем подключения по названию.
-     * @param {string} [driverName=''] Навание модуля.
+     * @param {String} [driverName=''] Навание модуля.
      * @returns {{}} Объект с неинициализированным модулем подключения.
      */
     getDriver(driverName = '') {
@@ -359,7 +286,7 @@ class Storage {
 
     /**
      * Получение соединения с БД по названию.
-     * @param {string} connectionName Название соединения.
+     * @param {String} connectionName Название соединения.
      * @returns {Object} Инициализированный молудь с соединением с БД.
      */
     getDBConnection(connectionName) {
@@ -370,7 +297,7 @@ class Storage {
 
     /**
      * Получение соединения с кэшом по названию.
-     * @param {string} connectionName Название соединения.
+     * @param {String} connectionName Название соединения.
      * @returns {Object} Инициализированный молудь с соединением с кэшом.
      */
     getCacheConnection(connectionName) {
@@ -381,7 +308,7 @@ class Storage {
 
     /**
      * Проверка названия и запроса и наличия соединений с хранилищами для данного запроса.
-     * @param {string} queryName Название запроса.
+     * @param {String} queryName Название запроса.
      * @returns {Promise} Промис в состоянии resolve с данными запроса или reject с сообщением об ошибке.
      * @private
      */
@@ -406,8 +333,8 @@ class Storage {
     /**
      * Добавление в запрос дополнительных частей.
      * Добавление дополнительных частей запроса зависит от наличия свойств в параметрах запроса к БД.
-     * @param {object} query Объект с описанием запроса.
-     * @param {object} param Объект с параметрами для запроса к БД.
+     * @param {Object} query Объект с описанием запроса.
+     * @param {Object} param Объект с параметрами для запроса к БД.
      * @returns {Promise} resolve с обновленным запросом или reject с сообщением об ошибке.
      * @private
      */
@@ -417,8 +344,10 @@ class Storage {
                 if (query.addition) {
                     let addition = '';
                     for (let name in query.addition) {
-                        addition = (name in param) ? query.addition[name] : '';
-                        query.sql = query.sql.replace(`$>${name}<`, addition);
+                        if (query.addition.hasOwnProperty(name)) {
+                            addition = (name in param) ? query.addition[name] : '';
+                            query.sql = query.sql.replace(`$>${name}<`, addition);
+                        }
                     }
                 }
 
@@ -432,8 +361,8 @@ class Storage {
     /**
      * Получение данных из хранилищ (кэш или БД).
      * Автоматически кэширует данные, если в настройках запроса установлен флаг кеширования.
-     * @param {string} queryName Название схемы данных для запроса.
-     * @param {object=} [param={}] Параметры для получения данных.
+     * @param {String} queryName Название схемы данных для запроса.
+     * @param {Object=} [param={}] Параметры для получения данных.
      * @returns {Promise} Промис в состоянии resolve с результатами получения данных, или reject с сообщением об ошибке.
      */
     getData(queryName, param = {}) {
@@ -478,8 +407,8 @@ class Storage {
     /**
      * Получение данных напрямую из БД, минуя кэш.
      * Результаты запроса кэшироваться не будут.
-     * @param {string} queryName Название схемы данных для запроса.
-     * @param {object=} [param={}] Параметры для запроса в БД.
+     * @param {String} queryName Название схемы данных для запроса.
+     * @param {Object=} [param={}] Параметры для запроса в БД.
      * @returns {Promise} resolve с ответом БД или reject с сообщением об ошибке.
      */
     getFromDB(queryName, param = {}) {
@@ -497,8 +426,8 @@ class Storage {
 
     /**
      * Получение данных только из кэша.
-     * @param {string} [connectionName='main'] Название соединения из настроек.
-     * @param {string} cacheName Название ключа кэша.
+     * @param {String} [connectionName='main'] Название соединения из настроек.
+     * @param {String} cacheName Название ключа кэша.
      * @returns {Promise} Промис в состоянии resolve с результатами получения данных, или reject с сообщением об ошибке.
      */
     getFromCache(connectionName, cacheName) {
@@ -512,8 +441,8 @@ class Storage {
 
     /**
      * Помещение данных в хранилище (БД).
-     * @param {string} queryName Название схемы данных для запроса.
-     * @param {object} [param={}] Параметры для помещения в хранилище.
+     * @param {String} queryName Название схемы данных для запроса.
+     * @param {Object} [param={}] Параметры для помещения в хранилище.
      * @returns {Promise} Промис в состоянии resolve, или reject с сообщением об ошибке.
      */
     setToDB(queryName, param = {}) {
@@ -531,10 +460,10 @@ class Storage {
 
     /**
      * Помещение данных только в кэш.
-     * @param {string} connectionName Название соединения из настроек.
-     * @param {string} cacheName Название ключа кэша.
-     * @param {object} data Данные для кэширования.
-     * @param {number} expire Время жизни кэша. 0 - кэш не будет устаревать.
+     * @param {String} connectionName Название соединения из настроек.
+     * @param {String} cacheName Название ключа кэша.
+     * @param {*} data Данные для кэширования.
+     * @param {Number} expire Время жизни кэша. 0 - кэш не будет устаревать.
      * @returns {Promise} resolve с результатом сохранения данных в кэше reject с сообщением об ошибке.
      */
     setToCache(connectionName, cacheName, data, expire = 0) {
@@ -548,30 +477,34 @@ class Storage {
 
     /**
      * Генератор массива проверок имен для транзакционных запросов.
-     * @param {string[]} namesList Список имен.
+     * @param {String[]} namesList Список имен.
      * @private
      */
     *_checkTransactionNames(namesList) {
         for (let index in namesList) {
-            yield this._checkName(namesList[index]);
+            if (namesList.hasOwnProperty(index)) {
+                yield this._checkName(namesList[index]);
+            }
         }
     }
 
     /**
      * Генератор массива для пакетного добавления в транзакционные запросы дополнительных частей.
-     * @param {object[]} queriesList Массив со списком описаний запросов.
-     * @param {object[]} [paramList=[]] Массив с параметрами для запросов в БД.
+     * @param {Object[]} queriesList Массив со списком описаний запросов.
+     * @param {Object[]} [paramList=[]] Массив с параметрами для запросов в БД.
      * @private
      */
     *_additionTransactionQuery(queriesList, paramList = []) {
         for (let index in queriesList) {
-            yield this._additionQuery(queriesList[index], paramList[index] || {});
+            if (queriesList.hasOwnProperty(index)) {
+                yield this._additionQuery(queriesList[index], paramList[index] || {});
+            }
         }
     }
 
     /**
      * Проверка наличия одинаковых подключений к БД для транзакционных запросов.
-     * @param {object[]} connectionsList Массив со списком описаний запросов.
+     * @param {Object[]} connectionsList Массив со списком описаний запросов.
      * @returns {Promise} resolve с полученным массивом со списком описаний запросов reject с сообщением об ошибке.
      * @private
      */
@@ -594,7 +527,7 @@ class Storage {
 
     /**
      * Получение массива текстов SQL-запросов из массива описаний запросов для транзакционных запросов.
-     * @param {object[]} connectionsList Массив с описаниями запросов.
+     * @param {Object[]} connectionsList Массив с описаниями запросов.
      * @returns {Promise} resolve с массивом с текстами запросов reject с сообщением об ошибке.
      * @private
      */
@@ -612,8 +545,8 @@ class Storage {
 
     /**
      * Отправка транзакционных запросов в БД и получение результатов.
-     * @param {string[]} sqlList Массив названий запросов.
-     * @param {object[]} [paramList=[]] Массив объектов с параметрами запросов.
+     * @param {String[]} sqlList Массив названий запросов.
+     * @param {Object[]} [paramList=[]] Массив объектов с параметрами запросов.
      * @returns {Promise} resolve с массивом с результатми транзакционного запроса reject с сообщением об ошибке.
      */
     transactionToDB(sqlList, paramList = []) {
@@ -652,11 +585,11 @@ class Storage {
 
     /**
      * Отправка транзакционных запросов в кэш и получение результатов.
-     * @param {string} connectionName Название соединения из настроек, через которое будут идти запросы.
-     * @param {string[]} actionsList Список действий для запросов (get || set).
-     * @param {string[]} namesList Список названий ключей кэша.
-     * @param {array} [dataList=[]] Список данных для помещения в кэш.
-     * @param {number[]} [expiresList=[]] Список указаний времени жизни каждого ключа (при запросах типа set).
+     * @param {String} connectionName Название соединения из настроек, через которое будут идти запросы.
+     * @param {String[]} actionsList Список действий для запросов (get || set).
+     * @param {String[]} namesList Список названий ключей кэша.
+     * @param {Array} [dataList=[]] Список данных для помещения в кэш.
+     * @param {Number[]} [expiresList=[]] Список указаний времени жизни каждого ключа (при запросах типа set).
      * @returns {Promise} resolve с результатми транзакционных запросов или reject с описанием ошибки.
      */
     transactionToCache(connectionName, actionsList, namesList, dataList = [], expiresList = []) {
@@ -688,9 +621,6 @@ class Storage {
         return this._checkName(queryName) // проверка имени запроса и наличия соединения с хранилищами
             .then(result => {
                 query = result;
-                return Promise.resolve(true);
-            })
-            .then(() => { // дополнение запроса
                 return this._additionQuery(query, param);
             })
             .then(result => {// запрос в БД
@@ -710,14 +640,14 @@ class Storage {
 
                 return Promise.resolve(result);
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.reloadFromDBToCache.name}`, error);
             });
     }
 }
 
 /**
- * Модуль работы с внешними хранилищами (БД и кэш).
- * @type {Storage}
+ * Module works with external storage (database and cache).
+ * @type {PragmaStorage}
  */
-module.exports = new Storage();
+module.exports = new PragmaStorage();

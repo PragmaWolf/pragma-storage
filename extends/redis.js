@@ -55,6 +55,7 @@ class Redis {
         }
     }
 
+    // noinspection JSMethodCanBeStatic
     /**
      * Формирование параметров в строку для добавления в ключ кэша.
      * @param {object=} [param={}] Параметры получения данных.
@@ -69,14 +70,16 @@ class Redis {
         }
 
         for (let paramName in param) {
-            let paramVal = param[paramName];
+            if (param.hasOwnProperty(paramName)) {
+                let paramVal = param[paramName];
 
-            // обрезка длины строковых значений
-            if (typeof param[paramName] === 'string' && param[paramName].length > 16) {
-                paramVal = paramVal.substr(0, 15);
+                // обрезка длины строковых значений
+                if (typeof param[paramName] === 'string' && param[paramName].length > 16) {
+                    paramVal = paramVal.substr(0, 15);
+                }
+
+                key += `:${paramName}:${paramVal}`;
             }
-
-            key += `:${paramName}:${paramVal}`;
         }
 
         return key;
@@ -176,6 +179,10 @@ class Redis {
                 // формирование списка запросов
                 let multiRequests = [];
                 for (let index in actionsList) {
+                    if (!actionsList.hasOwnProperty(index)) {
+                        continue;
+                    }
+
                     let oneRequest = [];
                     let action = 'get';
                     if (actionsList[index] === 'set') {
