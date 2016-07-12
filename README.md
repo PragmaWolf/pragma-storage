@@ -8,15 +8,19 @@
 - ES2015
 
 ## Install
+
     npm i -save pragma-storage
 
 ## Connection
+
     const pragmaStorage = require('pragma-storage');
 
 ## Initialization
+
     pragmaStorage.init(options, queries);
 
 ### Options
+
 To connect to multiple databases and/or caches:
 
     {
@@ -471,5 +475,6 @@ Retrieving data from the database and placing them in the cache.
         });
 
 # License
+
 [wtfpl]: wtfpl-badge-1.png "WTFPL License :)"
 ![No WTFPL License image :(][wtfpl]
