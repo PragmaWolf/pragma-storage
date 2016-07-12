@@ -17,7 +17,7 @@ module.exports = new (winston.Logger)({
         timestamp: true,
         colorize:  true,
         level:     'silly',
-        label:     'Storage.io',
+        label:     'PragmaStorage',
         json:      false
     })]
 });
