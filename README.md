@@ -1,4 +1,6 @@
-# Module works with external storage (database and cache). #
+# PragmaStorage #
+
+Module works with external storage (database and cache).
 
 ## Used and tested on ##
 
