@@ -1,6 +1,6 @@
 {
   "name": "pragma-storage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Package for use multiple data storages in one interface API",
   "main": "index.js",
   "scripts": {
