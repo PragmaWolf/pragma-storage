@@ -20,31 +20,22 @@ class PragmaStorage {
 
         /** JSON-schema for check settings */
         this.settingsSchema = require('./schemas/settings.json');
-
         /** JSON-schema for check queries list */
         this.queriesSchema = require('./schemas/queries.json');
-
         /** The path to the folder with the modules, extensions to work with individual stores. */
         this.extendsFolder = `${__dirname}/extends/`;
-
         /** Settings object */
         this.settings = {};
-
         /** Queries object */
         this.queries = {};
-
         /** Connections to storages */
         this.connections = {};
-
         /** Default connection name */
         this.connectionName = 'main';
-
         /** PragmaStorage state */
         this.state = 'initial';
-
         /** PragmaStorage ready for work */
         this.ready = false;
-
         /** JSON-schemas validator object */
         this.validator = new ZSchema();
 
@@ -61,7 +52,8 @@ class PragmaStorage {
     /**
      * Check the list of requests for compliance with JSON-scheme.
      * @param {Object} queries Object list requests.
-     * @returns {Promise.<resolve|reject>} JSON with requests list or error message.
+     * @returns {Promise.<Object|Error>} Resolve with empty object, if requests list is empty or checked list
+     *     requests. Reject with error.
      * @private
      */
     _validateQueries(queries) {
@@ -76,7 +68,7 @@ class PragmaStorage {
      * Checking transferred JSON-array to meet the specified JSON-scheme.
      * @param {Object=} [json={}] JSON for checking.
      * @param {Object=} [schema={}] JSON-scheme to check the transmitted JSON.
-     * @returns {Promise.<resolve|reject>} Validated JSON or error message.
+     * @returns {Promise.<Object|Error>} Validated JSON or error message.
      * @private
      */
     _jsonSchemaValidator(json = {}, schema = {}) {
@@ -93,9 +85,9 @@ class PragmaStorage {
     }
 
     /**
-     * Проверка наличия запроса по имени.
-     * @param {String} name Название запроса.
-     * @returns {Boolean} TRUE если есть запрос, FALSE, если нет.
+     * Check query in list by query name
+     * @param {String} name Query name.
+     * @returns {Boolean} TRUE if query exists or FALSE if not exists.
      * @private
      */
     _existQuery(name) {
@@ -103,9 +95,10 @@ class PragmaStorage {
     }
 
     /**
-     * Проверка настроек на соответствие JSON-схеме.
-     * @param {Object} settings Объект с настройками.
-     * @returns {Promise} Промис в состоянии resolve с массивом json или reject с сообщением об ошибке.
+     * Check module settings by JSON-schema.
+     * @param {Object} settings Object with settings.
+     * @returns {Promise.<Object|Error>} Resolve with empty object, if settings is empty or checked settings. Reject
+     *     with error.
      * @private
      */
     _validateSettings(settings) {
@@ -124,8 +117,8 @@ class PragmaStorage {
     }
 
     /**
-     * Подгрузка и инициализация расширяющих модулей для подключения к БД или кэшу.
-     * @returns {Promise} Промис в состоянии resolve если расширения загружены или reject с ошибкой
+     * Loading expands modules for working with DB and cache.
+     * @returns {Promise.<Boolean|Error>} Resolve with TRUE if expands modules loaded. Reject with error.
      * @private
      */
     _loadExtends() {
@@ -165,9 +158,9 @@ class PragmaStorage {
     }
 
     /**
-     * Применение настроек для одного подключения.
-     * @param {Object} settings Настройки подключения.
-     * @param {String=} [connectionName='main'] Название подключения.
+     * Set settings for a single connection.
+     * @param {Object} settings Object with connection settings.
+     * @param {String=} [connectionName='main'] Connection name by default. If not set< will be used name "main".
      * @private
      */
     _applyOneConnection(settings, connectionName = 'main') {
@@ -182,15 +175,14 @@ class PragmaStorage {
             this.connections[connectionName].db = new this[settings.driver](settings.connection);
         }
 
-        // подключение кэша
         if (settings.redis) {
             this.connections[connectionName].cache = new this.redis(settings.redis); // eslint-disable-line new-cap
         }
     }
 
     /**
-     * Применение настроек для нескольких подключений.
-     * @param {Object} settings Объект с именованными настройками подключения.
+     * Set settings for a multiple connection.
+     * @param {Object} settings Object with connection settings.
      * @private
      */
     _applyMultiConnection(settings) {
@@ -202,7 +194,7 @@ class PragmaStorage {
     }
 
     /**
-     * Применение настроек в зависимости от содержания объекта с настройками.
+     * Apply settings depending on the content of the settings object.
      * @private
      */
     _applySettings() {
@@ -214,9 +206,9 @@ class PragmaStorage {
     }
 
     /**
-     * Проверка и применение полученных настроек.
-     * @param {Object} settings Объект с настройками.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
+     * Check and apply settings. The old settings will be replaced by new.
+     * @param {Object} settings Object with settings.
+     * @returns {Promise.<Boolean|Error>} Resolve with TRUE if settings applied. Reject with error.
      * @private
      */
     addSettings(settings) {
@@ -225,43 +217,44 @@ class PragmaStorage {
                 this.settings = result;
                 return Promise.resolve(this.settings);
             })
-            .then(() => { // подгрузка расширений
+            .then(() => {
                 return this._loadExtends();
             })
-            .then(() => { // применение настроек
+            .then(() => {
                 this._applySettings();
+                return Promise.resolve(true);
             });
     }
 
     /**
-     * Проверка и применение полученного списка запросов.
-     * @param {Object} queries Объект со списком запросов.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
+     * Check and apply queries list. New queries will be merged with the old.
+     * @param {Object} queries Object with queries.
+     * @returns {Promise.<Boolean|Error>} Resolve with TRUE if queries applied. Reject with error.
      * @private
      */
     addQueries(queries) {
         return this._validateQueries(queries)
             .then(result => {
                 this.queries = Object.assign(this.queries, result);
-                return Promise.resolve(this.queries);
+                return Promise.resolve(true);
             });
     }
 
     /**
-     * Инициализатор класса.
-     * @param {Object=} [settings={}] Объект с настройками подключений.
-     * @param {Object=} [queries={}] Объект с запросами в БД.
+     * Module initialization.
+     * @param {Object=} [settings={}] Object with settings.
+     * @param {Object=} [queries={}] Object with queries.
      * @example
      * storage.init({}, {})
      *     .then(result => console.log(`PragmaStorage ready ${storage.ready}`))
      *     .catch(error => console.error(error));
-     * @returns {Promise} Промис в состоянии resolve с объектом PragmaStorage или reject с ошибкой.
+     * @returns {Promise.<String|Error>} Resolve with module initialization state. Reject with error.
      */
     init(settings = {}, queries = {}) {
         this.ready = false;
         this.state = 'waiting';
-        return this.addSettings(settings) // проверка и добавление настроек
-            .then(() => { // проверка и добавление запросов
+        return this.addSettings(settings)
+            .then(() => {
                 return this.addQueries(queries);
             })
             .then(() => {
@@ -269,25 +262,25 @@ class PragmaStorage {
                 this.ready = !!Object.keys(this.settings);
                 return Promise.resolve(this.ready);
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 this.state = 'failed';
                 return catchError(`${this.init.name}`, error);
             });
     }
 
     /**
-     * Получение объекта с неинициализированным модулем подключения по названию.
-     * @param {String} [driverName=''] Навание модуля.
-     * @returns {{}} Объект с неинициализированным модулем подключения.
+     * Getting object uninitialized module connection to a database or cache by name.
+     * @param {String} [driverName=''] Module (driver) name.
+     * @returns {Object|Null} Uninitialized connection module or NULL.
      */
     getDriver(driverName = '') {
         return this[driverName] || null;
     }
 
     /**
-     * Получение соединения с БД по названию.
-     * @param {String} connectionName Название соединения.
-     * @returns {Object} Инициализированный молудь с соединением с БД.
+     * Getting active connections to the database by name specified in the settings.
+     * @param {String} connectionName Connection name.
+     * @returns {Object|Null} Initialized connection DB module or NULL.
      */
     getDBConnection(connectionName) {
         connectionName = connectionName || this.connectionName;
@@ -296,9 +289,9 @@ class PragmaStorage {
     }
 
     /**
-     * Получение соединения с кэшом по названию.
-     * @param {String} connectionName Название соединения.
-     * @returns {Object} Инициализированный молудь с соединением с кэшом.
+     * Getting active compound with keshom the title specified in the settings.
+     * @param {String} connectionName Connection name.
+     * @returns {Object|Null} Initialized connection cache module or NULL.
      */
     getCacheConnection(connectionName) {
         connectionName = connectionName || this.connectionName;
@@ -307,9 +300,9 @@ class PragmaStorage {
     }
 
     /**
-     * Проверка названия и запроса и наличия соединений с хранилищами для данного запроса.
-     * @param {String} queryName Название запроса.
-     * @returns {Promise} Промис в состоянии resolve с данными запроса или reject с сообщением об ошибке.
+     * Check exists query settings by name and check exists connection.
+     * @param {String} queryName Query settings name.
+     * @returns {Promise.<Object|Error>} Resolve with query settings object. Reject with error.
      * @private
      */
     _checkName(queryName) {
@@ -331,11 +324,10 @@ class PragmaStorage {
     }
 
     /**
-     * Добавление в запрос дополнительных частей.
-     * Добавление дополнительных частей запроса зависит от наличия свойств в параметрах запроса к БД.
-     * @param {Object} query Объект с описанием запроса.
-     * @param {Object} param Объект с параметрами для запроса к БД.
-     * @returns {Promise} resolve с обновленным запросом или reject с сообщением об ошибке.
+     * Add to query row additional parameters.
+     * @param {Object} query Query settings object.
+     * @param {Object} param Parameters for query.
+     * @returns {Promise.<Object|Error>} Resolve with query settings object. Reject with error.
      * @private
      */
     _additionQuery(query, param) {
@@ -359,39 +351,36 @@ class PragmaStorage {
     }
 
     /**
-     * Получение данных из хранилищ (кэш или БД).
-     * Автоматически кэширует данные, если в настройках запроса установлен флаг кеширования.
-     * @param {String} queryName Название схемы данных для запроса.
-     * @param {Object=} [param={}] Параметры для получения данных.
-     * @returns {Promise} Промис в состоянии resolve с результатами получения данных, или reject с сообщением об ошибке.
+     * Get data from storage (cache or DB). Getting data will be automating cachied, if caching is true.
+     * @param {String} queryName Query settings name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with data from storage. Reject with error.
      */
     getData(queryName, param = {}) {
         let query = {};
 
-        return this._checkName(queryName) // проверка имени запроса и наличия соединения с хранилищами
+        return this._checkName(queryName)
             .then(result => {
                 query = result;
                 return Promise.resolve(result);
             })
-            .then(result => { // запрос данных в кэше
+            .then(result => {
                 if (this.connections[result.connection].cache) {
                     return this.connections[result.connection].cache.getData(queryName, param);
                 }
 
                 return Promise.resolve(null);
             })
-            .then(result => {// запрос в БД
-                // нет модуля работы с БД
+            .then(result => {
                 if (!this.connections[query.connection].db) {
                     return Promise.resolve(result);
                 }
 
-                // формируем и отправляем запрос в БД
-                return this._additionQuery(query, param) // дополнение запроса
-                    .then(result => { // отправка запроса в БД
+                return this._additionQuery(query, param)
+                    .then(result => {
                         return this.connections[result.connection].db.getData(result.sql, param);
                     })
-                    .then(result => { // запись полученных данных в кэш
+                    .then(result => {
                         if (this.connections[query.connection].cache && result && query.caching) {
                             this.connections[query.connection].cache.setData(queryName, param, result, query.expire);
                         }
@@ -399,85 +388,84 @@ class PragmaStorage {
                         return Promise.resolve(result);
                     });
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.getData.name}`, error);
             });
     }
 
     /**
-     * Получение данных напрямую из БД, минуя кэш.
-     * Результаты запроса кэшироваться не будут.
-     * @param {String} queryName Название схемы данных для запроса.
-     * @param {Object=} [param={}] Параметры для запроса в БД.
-     * @returns {Promise} resolve с ответом БД или reject с сообщением об ошибке.
+     * Get data from DB, without using cache. Results not be placed on cache.
+     * @param {String} queryName Query settings name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with data from DB. Reject with error.
      */
     getFromDB(queryName, param = {}) {
-        return this._checkName(queryName) // проверка имени запроса и наличия соединения с хранилищами
+        return this._checkName(queryName)
             .then(result => {
                 return this._additionQuery(result, param);
             })
-            .then(result => {// запрос в БД
+            .then(result => {
                 return this.connections[result.connection].db.getData(result.sql, param);
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.getFromDB.name}`, error);
             });
     }
 
     /**
-     * Получение данных только из кэша.
-     * @param {String} [connectionName='main'] Название соединения из настроек.
-     * @param {String} cacheName Название ключа кэша.
-     * @returns {Promise} Промис в состоянии resolve с результатами получения данных, или reject с сообщением об ошибке.
+     * Get data only from cache.
+     * @param {String} [connectionName='main'] Name connection to storage.
+     * @param {String} cacheName Cache key name.
+     * @returns {Promise.<Array|*|Error>} Resolve with data from cache. Reject with error.
      */
     getFromCache(connectionName, cacheName) {
         connectionName = connectionName || this.connectionName;
 
         return this.connections[connectionName].cache.getData(cacheName)
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.getFromCache.name}`, error);
             });
     }
 
     /**
-     * Помещение данных в хранилище (БД).
-     * @param {String} queryName Название схемы данных для запроса.
-     * @param {Object} [param={}] Параметры для помещения в хранилище.
-     * @returns {Promise} Промис в состоянии resolve, или reject с сообщением об ошибке.
+     * Put data to DB without using cache.
+     * @param {String} queryName Query settings name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with result of putting data. Reject with error.
      */
     setToDB(queryName, param = {}) {
-        return this._checkName(queryName) // проверка имени запроса и наличия соединения с хранилищами
-            .then(result => { // дополнение запроса
+        return this._checkName(queryName)
+            .then(result => {
                 return this._additionQuery(result, param);
             })
-            .then(result => { // запись данных в БД
+            .then(result => {
                 return this.connections[result.connection].db.setData(result.sql, param);
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.setToDB.name}`, error);
             });
     }
 
     /**
-     * Помещение данных только в кэш.
-     * @param {String} connectionName Название соединения из настроек.
-     * @param {String} cacheName Название ключа кэша.
-     * @param {*} data Данные для кэширования.
-     * @param {Number} expire Время жизни кэша. 0 - кэш не будет устаревать.
-     * @returns {Promise} resolve с результатом сохранения данных в кэше reject с сообщением об ошибке.
+     * Put data only to cache.
+     * @param {String} connectionName Name connection to storage.
+     * @param {String} cacheName Cache key name.
+     * @param {*} data Data for placed in cache.
+     * @param {Number} expire Cache lifetime. 0 - immortal cache.
+     * @returns {Promise.<Array|Error>} Resolve with result of putting data. Reject with error.
      */
     setToCache(connectionName, cacheName, data, expire = 0) {
         connectionName = connectionName || this.connectionName;
 
         return this.connections[connectionName].cache.setData(cacheName, data, expire)
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.transactionToDB.name}`, error);
             });
     }
 
     /**
-     * Генератор массива проверок имен для транзакционных запросов.
-     * @param {String[]} namesList Список имен.
+     * Generate array for checking query names list.
+     * @param {String[]} namesList List of query names.
      * @private
      */
     *_checkTransactionNames(namesList) {
@@ -489,9 +477,9 @@ class PragmaStorage {
     }
 
     /**
-     * Генератор массива для пакетного добавления в транзакционные запросы дополнительных частей.
-     * @param {Object[]} queriesList Массив со списком описаний запросов.
-     * @param {Object[]} [paramList=[]] Массив с параметрами для запросов в БД.
+     * Generate array for adding to query row additional parameters.
+     * @param {Object[]} queriesList Queries settings list.
+     * @param {Object[]} [paramList=[]] List parameters for queries.
      * @private
      */
     *_additionTransactionQuery(queriesList, paramList = []) {
@@ -503,9 +491,9 @@ class PragmaStorage {
     }
 
     /**
-     * Проверка наличия одинаковых подключений к БД для транзакционных запросов.
-     * @param {Object[]} connectionsList Массив со списком описаний запросов.
-     * @returns {Promise} resolve с полученным массивом со списком описаний запросов reject с сообщением об ошибке.
+     * Checking for identical connections to the database for transactional queries.
+     * @param {Object[]} connectionsList Queries settings list.
+     * @returns {Promise.<Object|Error>} Resolve with checked queries settings list. Reject with error.
      * @private
      */
     _checkIdenticalConnections(connectionsList) {
@@ -526,9 +514,9 @@ class PragmaStorage {
     }
 
     /**
-     * Получение массива текстов SQL-запросов из массива описаний запросов для транзакционных запросов.
-     * @param {Object[]} connectionsList Массив с описаниями запросов.
-     * @returns {Promise} resolve с массивом с текстами запросов reject с сообщением об ошибке.
+     * Getting SQL-queries from queries settings list for transactional queries.
+     * @param {Object[]} connectionsList Queries settings list.
+     * @returns {Promise.<Array|Error>} Resolve with SQL-queries list. Reject with error.
      * @private
      */
     _extractTransactionQueries(connectionsList) {
@@ -544,10 +532,10 @@ class PragmaStorage {
     }
 
     /**
-     * Отправка транзакционных запросов в БД и получение результатов.
-     * @param {String[]} sqlList Массив названий запросов.
-     * @param {Object[]} [paramList=[]] Массив объектов с параметрами запросов.
-     * @returns {Promise} resolve с массивом с результатми транзакционного запроса reject с сообщением об ошибке.
+     * Sending transactional queries to DB and get the results.
+     * @param {String[]} sqlList Queries names list.
+     * @param {Object[]} [paramList=[]] Queries parameters list.
+     * @returns {Promise.<Array|Error>} Resolve with transactional queries results. Reject with error.
      */
     transactionToDB(sqlList, paramList = []) {
         if (!Array.isArray(sqlList)) {
@@ -561,9 +549,8 @@ class PragmaStorage {
         let checkNamesList = this._checkTransactionNames(sqlList);
         let connectionName = 'main';
 
-        // переданных имен
         return Promise.all([...checkNamesList])
-            .then(connectionsList => { // должны быть одинаковые названия подключений
+            .then(connectionsList => {
                 return this._checkIdenticalConnections(connectionsList);
             })
             .then(connectionsList => {
@@ -578,19 +565,19 @@ class PragmaStorage {
             .then(queriesSql => {
                 return this.connections[connectionName].db.transactionRequest(queriesSql, paramList);
             })
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.transactionToDB.name}`, error);
             });
     }
 
     /**
-     * Отправка транзакционных запросов в кэш и получение результатов.
-     * @param {String} connectionName Название соединения из настроек, через которое будут идти запросы.
-     * @param {String[]} actionsList Список действий для запросов (get || set).
-     * @param {String[]} namesList Список названий ключей кэша.
-     * @param {Array} [dataList=[]] Список данных для помещения в кэш.
-     * @param {Number[]} [expiresList=[]] Список указаний времени жизни каждого ключа (при запросах типа set).
-     * @returns {Promise} resolve с результатми транзакционных запросов или reject с описанием ошибки.
+     * Sending transactional queries to cache and get results.
+     * @param {String} connectionName Name connection to storage.
+     * @param {String[]} actionsList Actions list ("get" or "set").
+     * @param {String[]} namesList Cache keys list.
+     * @param {Array} [dataList=[]] List of data to placing in cache.
+     * @param {Number[]} [expiresList=[]] List of cache lifetimes (only for action "set").
+     * @returns {Promise.<Array|Error>} Resolve with list results of queries to cache. Reject with error.
      */
     transactionToCache(connectionName, actionsList, namesList, dataList = [], expiresList = []) {
         if (!Array.isArray(actionsList)) {
@@ -604,34 +591,33 @@ class PragmaStorage {
         connectionName = connectionName || this.connectionName;
 
         return this.connections[connectionName].cache.transactionRequest(actionsList, namesList, dataList, expiresList)
-            .catch(error => { // перебрасываем ошибку
+            .catch(error => {
                 return catchError(`${this.getFromCache.name}`, error);
             });
     }
 
     /**
-     * Обновление данных из БД в кэше. С возвращением полученных данных.
-     * @param {String} queryName Название схемы данных для запроса.
-     * @param {Object=} [param={}] Параметры для получения данных.
-     * @returns {Promise} Промис в состоянии resolve с результатами получения данных, или reject с сообщением об ошибке.
+     * Update data in cache from DB. Returned getting from DB data.
+     * @param {String} queryName Query settings name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with data from DB. Reject with error.
      */
     reloadFromDBToCache(queryName, param = {}) {
         let query = {};
 
-        return this._checkName(queryName) // проверка имени запроса и наличия соединения с хранилищами
+        return this._checkName(queryName)
             .then(result => {
                 query = result;
                 return this._additionQuery(query, param);
             })
-            .then(result => {// запрос в БД
-                // нет модуля работы с БД
+            .then(result => {
                 if (!this.connections[query.connection].db) {
                     return Promise.resolve(null);
                 }
 
                 return this.connections[result.connection].db.getData(result.sql, param);
             })
-            .then(result => { // запись полученных данных в кэш
+            .then(result => {
                 if (this.connections[query.connection].cache) {
                     if (result && query.caching) {
                         this.connections[query.connection].cache.setData(queryName, result, query.expire, param);
@@ -646,8 +632,4 @@ class PragmaStorage {
     }
 }
 
-/**
- * Module works with external storage (database and cache).
- * @type {PragmaStorage}
- */
 module.exports = new PragmaStorage();

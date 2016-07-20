@@ -1,50 +1,37 @@
 'use strict';
-/**
- * Модуль работы с кэшом.
- * @module redis
- * @license WTFPL
- */
 
-/** Работа с Redis. */
 const redis = require('redis');
-/**
- * Класс работы с кэшом.
- * При инициализации автоматически инициирует подключение к кэшу и сохраняет его в себе.
- */
+
+/** Extension for Redis cache. */
 class Redis {
-    /**
-     * Конструктор класса.
-     * @param {object} connectParam Параметры подключения к Redis.
-     */
+    /** @param {Object} connectParam Parameters for connection to cache. */
     constructor(connectParam) {
-        /** Название текущего класса для дебага и лога ошибок */
         this._CLASS = this.constructor.name.toString();
 
         /**
-         * Свойство для хранения текущего соединения.
+         * Connection to cache.
          * @type {Boolean|RedisClient|exports.createClient}
          */
         this.connection = false;
 
-        // префикс для ключей Redis должен заканчиваться на двоеточие
+        // prefix for cache keys must be ended by colon
         if (('prefix' in connectParam) && !connectParam.prefix.endsWith(':')) {
             connectParam.prefix += ':';
         }
 
-        /** Хранилище настроек подключения к Redis */
+        /** Connection settings */
         this.options = connectParam;
 
-        // инициализируем подключение к кэшу
+        // initialize connection
         this.connect();
     }
 
     /**
-     * Подключение к кэшу и сохранение подключения в свойстве класса.
-     * @returns {Redis.connection} Соединение с Redis.
+     * Initialize connection
+     * @returns {Redis.connection} Connection to cache.
      */
     connect() {
         try {
-            // если коннект еще не установлен
             if (!this.connection) {
                 this.connection = redis.createClient(this.options);
             }
@@ -57,9 +44,9 @@ class Redis {
 
     // noinspection JSMethodCanBeStatic
     /**
-     * Формирование параметров в строку для добавления в ключ кэша.
-     * @param {object=} [param={}] Параметры получения данных.
-     * @returns {string} Сформированные параметры для добавления в ключ кэша.
+     * Set parameters for query to string for use in cache key.
+     * @param {Object=} [param={}] Parameters for queery.
+     * @returns {String} String for use in cache key.
      * @private
      */
     _compileParam(param = {}) {
@@ -86,10 +73,10 @@ class Redis {
     }
 
     /**
-     * Формирование ключа кэша.
-     * @param {string} queryName Название запроса для формирования ключа.
-     * @param {object=} [param={}] Параметры получения данных.
-     * @returns {string} Сформированный ключ для кэша.
+     * Generate cache key.
+     * @param {String} queryName Query name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {String} Cache key.
      * @private
      */
     _compileKey(queryName, param = {}) {
@@ -97,10 +84,10 @@ class Redis {
     }
 
     /**
-     * Получение данных из кеша.
-     * @param {string} queryName Название запроса для формирования ключа.
-     * @param {object=} [param={}] Параметры получения данных.
-     * @returns {Promise} Промис в состоянии resolve с данными из кэша или reject с сообщением об ошибке.
+     * Get data from cache.
+     * @param {String} queryName Query name.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with data from cache. Reject with error.
      */
     getData(queryName, param = {}) {
         let cacheKey = this._compileKey(queryName, param);
@@ -131,12 +118,12 @@ class Redis {
     }
 
     /**
-     * Помещение данных в кэш.
-     * @param {string} queryName Название запроса для формирования ключа.
-     * @param {*=} [data={}] Данные для помещения в кэш.
-     * @param {number=} [expire=0] Время жизни данных в кэше.
-     * @param {object=} [param={}] Параметры получения данных.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
+     * Putting datd to cache.
+     * @param {String} queryName Query name.
+     * @param {*=} [data={}] Data for placed in cache.
+     * @param {Number=} [expire=0] Cache lifetime.
+     * @param {Object=} [param={}] Parameters for query.
+     * @returns {Promise.<Array|Error>} Resolve with result of putting data to cache. Reject with error.
      */
     setData(queryName, data = {}, expire = 0, param = {}) {
         let cacheKey = this._compileKey(queryName, param);
@@ -166,17 +153,17 @@ class Redis {
     }
 
     /**
-     * Отправка транзакционных запросов и получение результатов.
-     * @param {string[]} actionsList Список действий для запросов (get || set).
-     * @param {string[]} namesList Список названий ключей кэша.
-     * @param {object[]} [dataList=[]] Список данных для помещения в кэш.
-     * @param {number[]} [expiresList=[]] Список указаний времени жизни каждого ключа (при запросах типа set).
-     * @returns {Promise} resolve с результатми транзакционных запросов или reject с описанием ошибки.
+     * Transaction queries to cache.
+     * @param {String[]} actionsList Actions list ("get" or "set").
+     * @param {String[]} namesList Cache keys list.
+     * @param {Object[]} [dataList=[]] List of data to placing in cache.
+     * @param {Number[]} [expiresList=[]] List of cache lifetimes (only for action "set").
+     * @returns {Promise.<Array|Error>} Resolve with result of putting data to cache. Reject with error.
      */
     transactionRequest(actionsList, namesList, dataList = [], expiresList = []) {
         return new Promise(
             (resolve, reject) => {
-                // формирование списка запросов
+                // generate queries list
                 let multiRequests = [];
                 for (let index in actionsList) {
                     if (!actionsList.hasOwnProperty(index)) {
@@ -205,7 +192,7 @@ class Redis {
                     multiRequests.push(oneRequest);
                 }
 
-                // отправка запросов в кэш и получение результатов
+                // send queries to cache and get results
                 this.connection.multi(multiRequests)
                     .exec((error, results) => {
                         if (error) {
@@ -231,8 +218,4 @@ class Redis {
     }
 }
 
-/**
- * Модуль работы с кэшом.
- * @type {Redis}
- */
 module.exports = Redis;

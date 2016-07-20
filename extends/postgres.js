@@ -1,49 +1,32 @@
 'use strict';
-/**
- * Модуль работы с базой данных.
- * @module postgresql
- * @license WTFPL
- */
 
-/**
- * Модуль работы с PostgreSQL.
- * @type {pgPromise|IMain|*}
- */
 const pgPromise = require('pg-promise')();
 
-/**
- * Класс работы с базой данных.
- * При инициализации автоматически инициирует подключение к базе данных и сохраняет его в себе.
- */
+/** Extension for DB PostgreSQL. */
 class PostgreSQL {
-    /**
-     * Конструктор класса.
-     * @param {object} connectParam Параметры соединения с БД.
-     */
+    /** @param {Object} connectParam Parameters for connection to cache. */
     constructor(connectParam) {
-        /** Название текущего класса для дебага и лога ошибок */
         this._CLASS = this.constructor.name.toString();
 
         /**
-         * Свойство для хранения текущего соединения.
+         * Connection to DB.
          * @type {boolean|pgPromise|IMain}
          */
         this.connection = false;
 
-        /** Хранилище настроек подключения к Redis */
+        /** Connection settings */
         this.options = connectParam;
 
-        // инициализируем подключение к кэшу
+        // initialize connection
         this.connect();
     }
 
     /**
-     * Создание и получение подключения с БД. Если подключение уже создано, повторно создаваться оно не будет.
-     * @returns {pgPromise|IMain|Error} Объект с соединением с БД или объект с ошибкой.
+     * Initialize connection
+     * @returns {pgPromise|IMain|Error} Connection to DB.
      */
     connect() {
         try {
-            // если коннект еще не установлен
             if (!this.connection) {
                 this.connection = pgPromise(this.options);
             }
@@ -55,10 +38,10 @@ class PostgreSQL {
     }
 
     /**
-     * Отправка запроса в БД и получение результата.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object=} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve с результатом запроса или reject с сообщением об ошибке.
+     * Send request to DB and getting result.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     _request(sql, param = {}) {
         return this.connection.any(sql, param)
@@ -72,30 +55,29 @@ class PostgreSQL {
     }
 
     /**
-     * Помещение данных в БД.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object=} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
+     * Set data to DB.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     setData(sql, param = {}) {
         return this._request(sql, param);
     }
 
     /**
-     * Получение данных из БД.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object=} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
-     * @alias request
+     * Get data from DB.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     getData(sql, param = {}) {
         return this._request(sql, param);
     }
 
     /**
-     * Генератор параллельных запросов к БД для транзакции.
-     * @param {string[]} sqlList Список SQL-запросов.
-     * @param {object[]} [paramList=[]] Список параметров для запросов.
+     * Generate queries list for transaction.
+     * @param {String[]} sqlList Queries list.
+     * @param {Object[]} [paramList=[]] Queries parameters list.
      * @private
      */
     *_generateRequestsList(sqlList, paramList = []) {
@@ -107,10 +89,10 @@ class PostgreSQL {
     }
 
     /**
-     * Помещение данных в БД через транзакцию.
-     * @param {string[]} sqlList Список SQL-запросов.
-     * @param {object[]} [paramList=[]] Список параметров для запросов.
-     * @returns {Promise} resolve с массивом результататов транзакции reject с сообщением об ошибке.
+     * Send queries to DB with transactions.
+     * @param {String[]} sqlList Queries list.
+     * @param {Object[]} [paramList=[]] Queries parameters list.
+     * @returns {Promise} Resolve with array of query results. Reject with error.
      */
     transactionRequest(sqlList, paramList = []) {
         return this.connection.tx(() => {
@@ -127,5 +109,4 @@ class PostgreSQL {
     }
 }
 
-/** Модуль работы с базой данных. */
 module.exports = PostgreSQL;

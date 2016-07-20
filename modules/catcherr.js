@@ -1,21 +1,13 @@
 'use strict';
-/**
- * Модуль обработки и передачи дальше ошибок в блоках catch у Promise.
- * @module catcherr
- */
 
-/**
- * Персональные настройки логгера на основе winston.
- * @type {*|{error: Function, warn: Function, info: Function, verbose: Function, debug: Function, silly: Function}}
- */
 const log = require('./log');
 
 /**
- * Модуль обработки и возврата ошибок в блоках catch у Promise.
- * @param {String} object Название объекта.
- * @param {String|Object} error Объект ошибки.
- * @param {String} [level=warn] Уровень ошибки.
- * @returns {Promise} Промис в состоянии reject с сообзщением об ошибке.
+ * Error handling and returns for catch blocks in Promise.
+ * @param {String} object Object name.
+ * @param {String|Object} error Error object.
+ * @param {String} [level=warn] Error level.
+ * @returns {Promise.<Error>} Reject with error.
  */
 module.exports = (object, error, level = 'warn') => {
     log[level](`${object}:`, error);

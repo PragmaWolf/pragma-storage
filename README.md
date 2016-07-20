@@ -10,6 +10,30 @@ Module works with external storage (database and cache).
 - MySQL 5.7+ [Documentation](http://dev.mysql.com/doc/)
 - ES2015
 
+## Navigation
+
+- [Install](#install)
+- [Connection](#connection)
+- [Initialization](#initialization)
+    - [Options](#options)
+    - [Queries](#queries)
+- [Methods](#methods)
+    - [init](#initsetting-queries)
+    - [addSettings](#addsettingsoptions)
+    - [addQueries](#addqueriesqueries)
+    - [getDriver](#getdriverdrivername)
+    - [getDBConnection](#getdbconnectionconnectionname)
+    - [getCacheConnection](#getcacheconnectionconnectionname)
+    - [getData](#getdataqueryname-param)
+    - [getFromDB](#getfromdbqueryname-param)
+    - [getFromCache](#getfromcacheconnectionname-cachename)
+    - [setToDB](#settodbqueryname-param)
+    - [setToCache](#settocacheconnectionname-cachename-data-expire)
+    - [transactionToDB](#transactiontodbsqllist-paramlist)
+    - [transactionToCache](#transactiontocacheconnectionname-actionslist-nameslist-datalist-expireslist)
+    - [reloadFromDB](#reloadfromdbtocachequeryname-param)
+- [License](#license)
+
 ## Install ##
 
 ```bash
@@ -176,6 +200,21 @@ Additional request parameters to be used if a parameter with the same name is pr
 
 ## Methods ##
 
+- [init](#initsetting-queries)
+- [addSettings](#addsettingsoptions)
+- [addQueries](#addqueriesqueries)
+- [getDriver](#getdriverdrivername)
+- [getDBConnection](#getdbconnectionconnectionname)
+- [getCacheConnection](#getcacheconnectionconnectionname)
+- [getData](#getdataqueryname-param)
+- [getFromDB](#getfromdbqueryname-param)
+- [getFromCache](#getfromcacheconnectionname-cachename)
+- [setToDB](#settodbqueryname-param)
+- [setToCache](#settocacheconnectionname-cachename-data-expire)
+- [transactionToDB](#transactiontodbsqllist-paramlist)
+- [transactionToCache](#transactiontocacheconnectionname-actionslist-nameslist-datalist-expireslist)
+- [reloadFromDB](#reloadfromdbtocachequeryname-param)
+
 ### init([setting, queries])
 
 Initialize module instance with optionally parameters. 
@@ -192,11 +231,11 @@ pragmaStorage.init({}, {});
 
 ### addSettings(options); ###
 
-__options__ - `object` - See options description.
+__options__ - `object` - [See options description](#options).
 
 Return `Promise`.
 
-Changing the settings have already initialized module. The new settings will replace the old, listed at initialization.
+Check and apply settings. The old settings will be replaced by new.
 
 ```javascript
 let newOptions = {
@@ -239,11 +278,11 @@ pragmaStorage.addSettings(newOptions);
 
 ### addQueries(queries); ###
 
-__queries__ - `object` - See queries description.
+__queries__ - `object` - [See queries description](#queries).
 
 Return `Promise`.
 
-The change request list already initialized module. The new list replaces the old query provided during initialization.
+Check and apply queries list. New queries will be merged with the old.
 
 ```javascript
 let newQueries = {
@@ -481,9 +520,9 @@ let actions = [
 ];
 
 let names = [
-    'casheNameOne',
-    'casheNameOne',
-    'casheNameThee'
+    'cacheNameOne',
+    'cacheNameOne',
+    'cacheNameThee'
 ];
 
 let data = [

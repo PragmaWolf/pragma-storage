@@ -1,55 +1,38 @@
 'use strict';
-/**
- * Модуль работы с базой данных.
- * @module mysql
- * @license WTFPL
- */
 
-/**
- * Модуль работы с PostgreSQL.
- * @type {mysql|IMain|*}
- */
 const mysql = require('mysql');
 
-/**
- * Класс работы с базой данных.
- * При инициализации автоматически инициирует подключение к базе данных и сохраняет его в себе.
- */
+/** Extension for DB MySQL/MariaDB. */
 class MySQL {
-    /**
-     * Конструктор класса.
-     * @param {object} connectParam Параметры соединения с БД.
-     */
+    /** @param {object} connectParam Parameters for connection to cache. */
     constructor(connectParam) {
-        /** Название текущего класса для дебага и лога ошибок */
         this._CLASS = this.constructor.name.toString();
 
         /**
-         * Свойство для хранения текущего соединения.
+         * Connection to DB.
          * @type {boolean|pgPromise|IMain}
          */
         this.connection = false;
 
-        /** Хранилище настроек подключения к Redis */
+        /** Connection settings */
         this.options = connectParam;
 
-        // инициализируем подключение к кэшу
+        // initialize connection
         this.connect();
     }
 
     /**
-     * Создание и получение подключения с БД. Если подключение уже создано, повторно создаваться оно не будет.
-     * @returns {mysql|IMain|Error} Объект с соединением с БД или объект с ошибкой.
+     * Initialize connection
+     * @returns {mysql|IMain|Error} Connection to DB.
      */
     connect() {
         try {
-            // если коннект еще не установлен
             if (!this.connection) {
                 this.options.connectionLimit = this.options.poolSize;
 
                 this.connection = mysql.createPool(this.options);
 
-                // добавляем обработку именованных плейсхолдеров
+                // add handle named placeholders
                 this.connection.config.queryFormat = function(query, values) {
                     if (values) {
                         return query.replace(/:(\w+)/g, function(txt, key) {
@@ -71,10 +54,10 @@ class MySQL {
     }
 
     /**
-     * Отправка запроса в БД и получение результата.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object=} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve с результатом запроса или reject с сообщением об ошибке.
+     * Send request to DB and getting result.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     _request(sql, param = {}) {
         return new Promise(
@@ -97,30 +80,29 @@ class MySQL {
     }
 
     /**
-     * Помещение данных в БД.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object=} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
+     * Set data to DB.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     setData(sql, param = {}) {
         return this._request(sql, param);
     }
 
     /**
-     * Получение данных из БД.
-     * @param {object} sql Объект с данными запроса.
-     * @param {object} [param={}] Параметры запроса.
-     * @returns {Promise} Промис в состоянии resolve или reject с сообщением об ошибке.
-     * @alias request
+     * Get data from DB.
+     * @param {Object} sql Query row.
+     * @param {Object=} [param={}] Query parameters.
+     * @returns {Promise.<Array|Error>} Resolve with query result. Reject with error.
      */
     getData(sql, param) {
         return this._request(sql, param);
     }
 
     /**
-     * Генератор параллельных запросов к БД для транзакции.
-     * @param {string[]} sqlList Список SQL-запросов.
-     * @param {object[]} [paramList=[]] Список параметров для запросов.
+     * Generate queries list for transaction.
+     * @param {String[]} sqlList Queries list.
+     * @param {Object[]} [paramList=[]] Queries parameters list.
      * @private
      */
     *_generateRequestsList(sqlList, paramList = []) {
@@ -132,23 +114,22 @@ class MySQL {
     }
 
     /**
-     * Помещение данных в БД через транзакцию.
-     * ВНИМАНИЕ! В MySQL таблицы MyISAM не поддерживают транзакции.
-     * @param {string[]} sqlList Список SQL-запросов.
-     * @param {object[]} [paramList=[]] Список параметров для запросов.
-     * @returns {Promise} resolve с результатами транзакции reject с сообщением об ошибке.
+     * Send queries to DB with transactions.
+     * @param {String[]} sqlList Queries list.
+     * @param {Object[]} [paramList=[]] Queries parameters list.
+     * @returns {Promise} Resolve with array of query results. Reject with error.
      */
     transactionRequest(sqlList, paramList = []) {
         return new Promise(
             (resolve, reject) => {
-                // запуск транзакции
+                // start transaction
                 this.connection.beginTransaction(error => {
                     if (error) {
                         reject(error);
                     } else {
                         let requestsList = this._generateRequestsList(sqlList, paramList);
 
-                        // запуск запросов
+                        // start queries
                         Promise.all([...requestsList])
                             .then(result => { // коммит всех запросов
                                 this.connection.commit(error => {
@@ -170,5 +151,4 @@ class MySQL {
     }
 }
 
-/** Модуль работы с базой данных. */
 module.exports = MySQL;
