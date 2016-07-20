@@ -176,6 +176,20 @@ Additional request parameters to be used if a parameter with the same name is pr
 
 ## Methods ##
 
+### init([setting, queries])
+
+Initialize module instance with optionally parameters. 
+
+__setting__ - `object` - Object with module settings. Optional. [See options description](#options).
+
+__queries__ - `object` - Object with module queries. Optional. [See queries description](#queries).
+
+Return `Promise`.
+
+```javascript
+pragmaStorage.init({}, {});
+```
+
 ### addSettings(options); ###
 
 __options__ - `object` - See options description.
