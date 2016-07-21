@@ -209,7 +209,6 @@ class PragmaStorage {
      * Check and apply settings. The old settings will be replaced by new.
      * @param {Object} settings Object with settings.
      * @returns {Promise.<Boolean|Error>} Resolve with TRUE if settings applied. Reject with error.
-     * @private
      */
     addSettings(settings) {
         return this._validateSettings(settings)
@@ -230,7 +229,6 @@ class PragmaStorage {
      * Check and apply queries list. New queries will be merged with the old.
      * @param {Object} queries Object with queries.
      * @returns {Promise.<Boolean|Error>} Resolve with TRUE if queries applied. Reject with error.
-     * @private
      */
     addQueries(queries) {
         return this._validateQueries(queries)
