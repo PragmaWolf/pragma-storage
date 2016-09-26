@@ -100,7 +100,7 @@ class PostgreSQL {
 
             for (let index in sqlList) {
                 if (sqlList.hasOwnProperty(index)) {
-                    requestsList.push(this.any(sqlList[index], paramList[index] || {}));
+                    requestsList.push(this.connection.any(sqlList[index], paramList[index] || {}));
                 }
             }
 
