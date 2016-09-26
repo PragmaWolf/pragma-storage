@@ -95,16 +95,16 @@ class PostgreSQL {
      * @returns {Promise} Resolve with array of query results. Reject with error.
      */
     transactionRequest(sqlList, paramList = []) {
-        return this.connection.tx(() => {
+        return this.connection.tx(function() {
             let requestsList = [];
 
             for (let index in sqlList) {
                 if (sqlList.hasOwnProperty(index)) {
-                    requestsList.push(this.connection.any(sqlList[index], paramList[index] || {}));
+                    requestsList.push(this.any(sqlList[index], paramList[index] || {}));
                 }
             }
 
-            return this.connection.batch(requestsList);
+            return this.batch(requestsList);
         });
     }
 }
