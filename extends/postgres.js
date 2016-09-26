@@ -104,7 +104,7 @@ class PostgreSQL {
                 }
             }
 
-            return this.batch(requestsList);
+            return this.connection.batch(requestsList);
         });
     }
 }
